@@ -79,3 +79,70 @@
   width: fit-content;
   position: absolute;
 }
+
+/* ---- Text-to-speech (read aloud) ---- */
+#tts-toggle.tts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+#tts-toggle .tts-icon {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  display: block;
+}
+
+#tts-toggle .tts-icon-pause {
+  display: none;
+}
+
+#tts-toggle.tts-playing .tts-icon-play {
+  display: none;
+}
+
+#tts-toggle.tts-playing .tts-icon-pause {
+  display: block;
+}
+
+#tts-toggle.tts-playing {
+  color: #2b5b8c;
+  opacity: 0.9;
+}
+
+#tts-settings .tts-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+#tts-voice {
+  max-width: 100%;
+  padding: 4px;
+}
+
+.tts-rate-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tts-rate-row input[type="range"] {
+  flex: 1;
+}
+
+#tts-rate-display {
+  min-width: 36px;
+  text-align: right;
+  font-weight: bold;
+}
+
+#tts-stop {
+  padding: 6px 14px;
+  cursor: pointer;
+  align-self: flex-start;
+}

@@ -60,9 +60,15 @@
 	            <span id="chapter-title"></span>
 	        </div>
 	        <div id="title-controls">
+	            <a id="tts-toggle" class="tts-btn" href="#" role="button"
+	               aria-label="{{_('Read aloud')}}" aria-pressed="false"
+	               data-label-play="{{_('Read aloud')}}" data-label-pause="{{_('Pause reading')}}">
+	                <svg class="tts-icon tts-icon-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 2.5v11a.5.5 0 0 0 .77.42l8.5-5.5a.5.5 0 0 0 0-.84l-8.5-5.5A.5.5 0 0 0 4 2.5z"/></svg>
+	                <svg class="tts-icon tts-icon-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.5h2.5v11H4.5zM9 2.5h2.5v11H9z"/></svg>
+	            </a>
 	            <a id="bookmark" class="icon-bookmark-empty">Bookmark</a>
 	            <a id="setting" class="icon-cog">Settings</a>
-	            <a id="fullscreen" class="icon-resize-full">Fullscreen</a>            
+	            <a id="fullscreen" class="icon-resize-full">Fullscreen</a>
 	        </div>
 	    </div>
 
@@ -134,7 +140,19 @@
                 <label class="item">{{ _('Spread') }}:</label>
                 <button type="button" id="spread" onclick="spread(this.id)"><span>✓</span>{{_('Two columns')}}</button>
                 <button type="button" id="nonespread" onclick="spread(this.id)"><span></span>{{_('One column')}}</button>
-              </div>            
+              </div>
+            <div class="form-group" id="tts-settings">
+              <label class="item">{{ _('Read aloud') }}:</label>
+              <div class="tts-controls">
+                <select id="tts-voice" aria-label="{{ _('Voice') }}"></select>
+                <div class="tts-rate-row">
+                  <label for="tts-rate">{{ _('Speed') }}</label>
+                  <input type="range" id="tts-rate" min="0.5" max="2" step="0.1" value="1">
+                  <span id="tts-rate-display">1.0×</span>
+                </div>
+                <button type="button" id="tts-stop">{{ _('Stop') }}</button>
+              </div>
+            </div>
             <div class="closer icon-cancel-circled"></div>
         </div>
     </div>
@@ -491,5 +509,6 @@
       <script src="{{ url_for('static', filename='js/libs/screenfull.min.js') }}"></script>
       <script src="{{ url_for('static', filename='js/libs/reader.min.js') }}"></script>
       <script src="{{ url_for('static', filename='js/reading/epub.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/reading/tts.js') }}"></script>
     </body>
 </html>
