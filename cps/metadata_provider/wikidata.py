@@ -56,6 +56,13 @@ class Wikidata(Metadata):
     MAX_RESULTS = 8
     EXTRACT_LIMIT = 5
     TIMEOUT = (5, 15)  # (connect, read) secondi
+    # Wikimedia richiede uno User-Agent descrittivo e rifiuta quello di
+    # default di requests (risposta HTML -> JSONDecodeError). Vedi:
+    # https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
+    HEADERS = {
+        "User-Agent": "Calibre-Web-MetadataProvider/1.0 "
+        "(+https://github.com/janeczku/calibre-web)"
+    }
 
     # "instance of" (P31) che identificano un'opera/libro.
     BOOK_TYPES = {
@@ -141,7 +148,9 @@ class Wikidata(Metadata):
             "uselang": lang,
             "format": "json",
         }
-        resp = requests.get(self.API_URL, params=params, timeout=self.TIMEOUT)
+        resp = requests.get(
+            self.API_URL, params=params, headers=self.HEADERS, timeout=self.TIMEOUT
+        )
         resp.raise_for_status()
         ids = [
             item["title"]
@@ -161,7 +170,9 @@ class Wikidata(Metadata):
             "limit": 15,
             "format": "json",
         }
-        resp = requests.get(self.API_URL, params=params, timeout=self.TIMEOUT)
+        resp = requests.get(
+            self.API_URL, params=params, headers=self.HEADERS, timeout=self.TIMEOUT
+        )
         resp.raise_for_status()
         return [item["id"] for item in resp.json().get("search", [])]
 
@@ -181,7 +192,8 @@ class Wikidata(Metadata):
                 "format": "json",
             }
             resp = requests.get(
-                self.API_URL, params=params, timeout=self.TIMEOUT
+                self.API_URL, params=params, headers=self.HEADERS,
+                timeout=self.TIMEOUT
             )
             resp.raise_for_status()
             out.update(resp.json().get("entities", {}))
@@ -198,7 +210,9 @@ class Wikidata(Metadata):
             "titles": title,
             "format": "json",
         }
-        resp = requests.get(api, params=params, timeout=self.TIMEOUT)
+        resp = requests.get(
+            api, params=params, headers=self.HEADERS, timeout=self.TIMEOUT
+        )
         resp.raise_for_status()
         pages = resp.json().get("query", {}).get("pages", {})
         for page in pages.values():
