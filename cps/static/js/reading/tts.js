@@ -16,16 +16,17 @@
 
     var synth = window.speechSynthesis;
     var toggleBtn = document.getElementById("tts-toggle");
+    var prevBtn = document.getElementById("tts-prev");
+    var nextBtn = document.getElementById("tts-next");
 
     // Browser senza Web Speech API: niente TTS, nascondi il controllo.
     if (!synth || typeof window.SpeechSynthesisUtterance === "undefined") {
-        if (toggleBtn) {
-            toggleBtn.parentNode.removeChild(toggleBtn);
-        }
-        var unsupported = document.getElementById("tts-settings");
-        if (unsupported) {
-            unsupported.parentNode.removeChild(unsupported);
-        }
+        [toggleBtn, prevBtn, nextBtn,
+            document.getElementById("tts-settings")].forEach(function (el) {
+            if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
+            }
+        });
         return;
     }
 
@@ -41,6 +42,7 @@
     var qi = 0; // indice corrente in queue
     var highlighted = null; // elemento attualmente evidenziato
     var navByTts = false; // display() richiesto da noi, non dall'utente
+    var speakSeq = 0; // token: invalida gli onend delle utterance annullate
 
     var rate = parseFloat(localStorage.getItem(RATE_KEY)) || 1;
     if (rate < 0.5 || rate > 2) {
@@ -223,24 +225,29 @@
         highlight(item.el);
         scrollToElement(item.el);
 
+        var mySeq = ++speakSeq; // questa e' ora l'utterance attiva
         var utter = new window.SpeechSynthesisUtterance(item.text);
         utter.rate = rate;
         if (selectedVoice) {
-            utter.voice = selectedVoice;
-            utter.lang = selectedVoice.lang;
+            try {
+                utter.voice = selectedVoice;
+                utter.lang = selectedVoice.lang;
+            } catch (e) { /* voce non valida: usa la default */ }
         }
-        utter.onend = function () {
-            if (state === "playing") {
+        var advance = function () {
+            // Avanza solo se siamo ancora in riproduzione e questa e'
+            // l'ultima utterance emessa (le altre sono state annullate da
+            // pausa/seek e vanno ignorate).
+            if (state === "playing" && mySeq === speakSeq) {
                 qi += 1;
                 speakCurrent();
             }
         };
-        utter.onerror = function () {
-            if (state === "playing") {
-                qi += 1;
-                speakCurrent();
-            }
-        };
+        utter.onend = advance;
+        utter.onerror = advance;
+        try {
+            synth.cancel(); // evita accodamenti su alcuni browser
+        } catch (e) { /* noop */ }
         synth.speak(utter);
     }
 
@@ -305,11 +312,20 @@
         toggleBtn.setAttribute("aria-pressed", playing ? "true" : "false");
     }
 
+    function cancelSpeech() {
+        speakSeq += 1; // invalida l'onend dell'utterance in corso
+        try {
+            synth.cancel();
+        } catch (e) { /* noop */ }
+    }
+
     function play() {
+        // Ripresa dopo pausa: riparte dal blocco corrente (i blocchi sono le
+        // "tracce"; non riprendiamo a meta' frase, e' piu' prevedibile).
         if (state === "paused") {
             state = "playing";
-            synth.resume();
             updateButton();
+            speakCurrent();
             return;
         }
         var contents = currentContents();
@@ -331,19 +347,52 @@
             return;
         }
         state = "paused";
-        synth.pause();
+        cancelSpeech();
         updateButton();
     }
 
     function stop() {
         state = "stopped";
-        try {
-            synth.cancel();
-        } catch (e) { /* noop */ }
+        cancelSpeech();
         clearHighlight();
         queue = [];
         qi = 0;
         updateButton();
+    }
+
+    // Sposta l'evidenziazione (e, se in riproduzione, la voce) sul blocco a
+    // indice qi, senza doppioni con l'onend annullato.
+    function seekTo(newIndex) {
+        cancelSpeech();
+        qi = newIndex;
+        if (state === "playing") {
+            speakCurrent();
+        } else if (queue[qi]) {
+            highlight(queue[qi].el);
+            scrollToElement(queue[qi].el);
+        }
+    }
+
+    function next() {
+        if (state === "stopped" || !queue.length) {
+            return;
+        }
+        if (qi + 1 >= queue.length) {
+            // Fine sezione: se in riproduzione, passa al capitolo successivo.
+            if (state === "playing") {
+                cancelSpeech();
+                advanceSection();
+            }
+            return;
+        }
+        seekTo(qi + 1);
+    }
+
+    function prev() {
+        if (state === "stopped" || !queue.length) {
+            return;
+        }
+        seekTo(qi > 0 ? qi - 1 : 0);
     }
 
     function toggle() {
@@ -358,6 +407,18 @@
         toggleBtn.addEventListener("click", function (evt) {
             evt.preventDefault();
             toggle();
+        });
+    }
+    if (prevBtn) {
+        prevBtn.addEventListener("click", function (evt) {
+            evt.preventDefault();
+            prev();
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener("click", function (evt) {
+            evt.preventDefault();
+            next();
         });
     }
 

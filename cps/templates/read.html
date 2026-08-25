@@ -60,11 +60,17 @@
 	            <span id="chapter-title"></span>
 	        </div>
 	        <div id="title-controls">
+	            <a id="tts-prev" class="tts-btn" href="#" role="button" aria-label="{{_('Previous')}}">
+	                <svg class="tts-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M13 3.2v9.6a.4.4 0 0 1-.62.33L6 8.4a.4.4 0 0 1 0-.66l6.38-4.87A.4.4 0 0 1 13 3.2z"/><rect x="3" y="3" width="2" height="10" rx=".3"/></svg>
+	            </a>
 	            <a id="tts-toggle" class="tts-btn" href="#" role="button"
 	               aria-label="{{_('Read aloud')}}" aria-pressed="false"
 	               data-label-play="{{_('Read aloud')}}" data-label-pause="{{_('Pause reading')}}">
 	                <svg class="tts-icon tts-icon-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 2.5v11a.5.5 0 0 0 .77.42l8.5-5.5a.5.5 0 0 0 0-.84l-8.5-5.5A.5.5 0 0 0 4 2.5z"/></svg>
 	                <svg class="tts-icon tts-icon-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.5h2.5v11H4.5zM9 2.5h2.5v11H9z"/></svg>
+	            </a>
+	            <a id="tts-next" class="tts-btn" href="#" role="button" aria-label="{{_('Next')}}">
+	                <svg class="tts-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 3.2v9.6a.4.4 0 0 0 .62.33L10 8.4a.4.4 0 0 0 0-.66L3.62 2.87A.4.4 0 0 0 3 3.2z"/><rect x="11" y="3" width="2" height="10" rx=".3"/></svg>
 	            </a>
 	            <a id="bookmark" class="icon-bookmark-empty">Bookmark</a>
 	            <a id="setting" class="icon-cog">Settings</a>

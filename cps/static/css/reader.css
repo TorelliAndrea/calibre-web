@@ -81,7 +81,7 @@
 }
 
 /* ---- Text-to-speech (read aloud) ---- */
-#tts-toggle.tts-btn {
+.tts-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -89,11 +89,17 @@
   cursor: pointer;
 }
 
-#tts-toggle .tts-icon {
+.tts-btn .tts-icon {
   width: 15px;
   height: 15px;
   fill: currentColor;
   display: block;
+}
+
+#tts-prev .tts-icon,
+#tts-next .tts-icon {
+  width: 13px;
+  height: 13px;
 }
 
 #tts-toggle .tts-icon-pause {
