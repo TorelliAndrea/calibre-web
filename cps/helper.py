@@ -827,10 +827,13 @@ def get_series_thumbnail(series_id, resolution):
 # saves book cover from url
 def save_cover_from_url(url, book_path):
     try:
+        # allow_redirects=True: alcune fonti (es. le copertine Open Library)
+        # rispondono con un 302 verso l'immagine reale. Con advocate ogni hop
+        # del redirect resta validato contro indirizzi locali/privati (SSRF).
         if cli_param.allow_localhost:
-            img = requests.get(url, timeout=(10, 200), allow_redirects=False)  # ToDo: Error Handling
+            img = requests.get(url, timeout=(10, 200), allow_redirects=True)  # ToDo: Error Handling
         elif use_advocate:
-            img = cw_advocate.get(url, timeout=(10, 200), allow_redirects=False)      # ToDo: Error Handling
+            img = cw_advocate.get(url, timeout=(10, 200), allow_redirects=True)      # ToDo: Error Handling
         else:
             log.error("python module advocate is not installed but is needed")
             return False, _("Python module 'advocate' is not installed but is needed for cover uploads")
