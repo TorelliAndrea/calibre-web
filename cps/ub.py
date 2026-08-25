@@ -568,12 +568,42 @@ class Thumbnail(Base):
     expiration = Column(DateTime, nullable=True)
 
 
+# kosync: utenti e progresso di lettura per il protocollo di sincronizzazione
+# KOReader (usato anche dagli e-reader Xteink con firmware CrossPoint).
+# Sono un archivio a sE': KOReader autentica con md5(password) come chiave,
+# incompatibile con l'hashing degli account calibre-web.
+class KoSyncUser(Base):
+    __tablename__ = 'kosync_user'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True)
+    userkey = Column(String)  # md5 della password, inviato dal client
+    created = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class KoSyncProgress(Base):
+    __tablename__ = 'kosync_progress'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('kosync_user.id'))
+    document = Column(String)  # hash del documento calcolato dal dispositivo
+    progress = Column(String)  # locator opaco (xpointer/pagina)
+    percentage = Column(Float)
+    device = Column(String)
+    device_id = Column(String)
+    timestamp = Column(Integer)  # unix time dell'ultimo aggiornamento
+
+
 # Add missing tables during migration of database
 def add_missing_tables(engine, _session):
     if not engine.dialect.has_table(engine.connect(), "archived_book"):
         ArchivedBook.__table__.create(bind=engine)
     if not engine.dialect.has_table(engine.connect(), "thumbnail"):
         Thumbnail.__table__.create(bind=engine)
+    if not engine.dialect.has_table(engine.connect(), "kosync_user"):
+        KoSyncUser.__table__.create(bind=engine)
+    if not engine.dialect.has_table(engine.connect(), "kosync_progress"):
+        KoSyncProgress.__table__.create(bind=engine)
 
 
 # migrate all settings missing in registration table
