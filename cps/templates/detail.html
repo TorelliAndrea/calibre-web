@@ -263,6 +263,14 @@
                         </label>
                     </form>
                     </p>
+                    {% if entry.read_progress %}
+                    <p class="reading-progress">
+                        <span>{{ _('Reading progress') }}: {{ entry.read_progress }}%</span>
+                        <span style="display:inline-block;width:120px;height:6px;background:rgba(127,127,127,.25);border-radius:3px;vertical-align:middle;margin-left:6px;overflow:hidden;">
+                            <span style="display:block;height:100%;width:{{ entry.read_progress }}%;background:#2b5b8c;"></span>
+                        </span>
+                    </p>
+                    {% endif %}
                     {% if current_user.check_visibility(32768) %}
                         <p>
                         <form id="archived_form" action="{{ url_for('web.toggle_archived', book_id=entry.id) }}"

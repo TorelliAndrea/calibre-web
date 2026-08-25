@@ -173,6 +173,30 @@ def set_bookmark(book_id, book_format):
     return "", 201
 
 
+@web.route("/ajax/readingprogress/<int:book_id>/<book_format>", methods=['POST'])
+@user_login_required
+def set_reading_progress(book_id, book_format):
+    # Percentuale letta (0-100) inviata dal reader web mentre si legge. La
+    # salviamo su book_read_link e, se il libro non e' gia' "finito", lo
+    # marchiamo "in lettura".
+    try:
+        percentage = int(round(float(request.form.get("percentage", 0))))
+    except (TypeError, ValueError):
+        return "", 400
+    percentage = max(0, min(100, percentage))
+    book_read = ub.session.query(ub.ReadBook).filter(
+        and_(ub.ReadBook.user_id == int(current_user.id),
+             ub.ReadBook.book_id == book_id)).first()
+    if not book_read:
+        book_read = ub.ReadBook(user_id=current_user.id, book_id=book_id)
+        ub.session.add(book_read)
+    book_read.progress = percentage
+    if book_read.read_status != ub.ReadBook.STATUS_FINISHED:
+        book_read.read_status = ub.ReadBook.STATUS_IN_PROGRESS
+    ub.session_commit()
+    return "", 204
+
+
 @web.route("/ajax/toggleread/<int:book_id>", methods=['POST'])
 @user_login_required
 def toggle_read(book_id):
@@ -1635,6 +1659,9 @@ def show_book(book_id):
         entry = entries[0]
         entry.read_status = read_book == ub.ReadBook.STATUS_FINISHED
         entry.is_archived = archived_book
+        entry.read_progress = ub.session.query(ub.ReadBook.progress).filter(
+            and_(ub.ReadBook.user_id == int(current_user.id),
+                 ub.ReadBook.book_id == book_id)).scalar()
         for lang_index in range(0, len(entry.languages)):
             entry.languages[lang_index].language_name = isoLanguages.get_language_name(get_locale(), entry.languages[
                 lang_index].lang_code)

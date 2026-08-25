@@ -109,6 +109,10 @@ var reader;
                     let percentage = Math.round(location.end.percentage * 100);
                     progressDiv.textContent = percentage + "%";
 
+                    // Salva la percentuale letta sul server (per la vista libro),
+                    // con debounce per non spammare a ogni cambio pagina.
+                    saveReadingProgress(percentage);
+
                     // Pages based on generated EPUB locations (CFI positions)
                     const cfi = location.start.cfi;
                     const current =
@@ -169,6 +173,31 @@ var reader;
         }).fail(function (xhr, status, error) {
             alert(error);
         });
+    }
+
+    // Invia la percentuale letta al server (con debounce), per mostrarla nella
+    // pagina del libro. Silenzioso: un errore qui non deve disturbare la lettura.
+    var _progressTimer = null;
+    var _lastSentProgress = -1;
+    function saveReadingProgress(percentage) {
+        if (calibre.useBookmarks !== "true" || !calibre.progressUrl) {
+            return;
+        }
+        if (percentage === _lastSentProgress) {
+            return;
+        }
+        if (_progressTimer) {
+            clearTimeout(_progressTimer);
+        }
+        _progressTimer = setTimeout(function () {
+            _lastSentProgress = percentage;
+            var csrftoken = $("input[name='csrf_token']").val();
+            $.ajax(calibre.progressUrl, {
+                method: "post",
+                data: { percentage: percentage },
+                headers: { "X-CSRFToken": csrftoken },
+            });
+        }, 2500);
     }
 
     // Default settings load

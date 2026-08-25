@@ -411,6 +411,7 @@ class ReadBook(Base):
     book_id = Column(Integer, unique=False)
     user_id = Column(Integer, ForeignKey('user.id'), unique=False)
     read_status = Column(Integer, unique=False, default=STATUS_UNREAD, nullable=False)
+    progress = Column(Integer, default=0)  # percentuale letta (0-100), reader web
     kobo_reading_state = relationship("KoboReadingState", uselist=False,
                                       primaryjoin="and_(ReadBook.user_id == foreign(KoboReadingState.user_id), "
                                                   "ReadBook.book_id == foreign(KoboReadingState.book_id))",
@@ -648,12 +649,24 @@ def migrate_remote_auth_token_table(engine, _session):
 # Migrate database to current version, has to be updated after every database change. Currently, migration from
 # maybe 4/5 versions back to current should work.
 # Migration is done by checking if relevant columns are existing, and then adding rows with SQL commands
+def migrate_readbook_progress_table(engine, _session):
+    try:
+        _session.query(exists().where(ReadBook.progress)).scalar()
+        _session.commit()
+    except exc.OperationalError:  # colonna mancante nei DB esistenti
+        with engine.connect() as conn:
+            trans = conn.begin()
+            conn.execute(text("ALTER TABLE book_read_link ADD column 'progress' INTEGER DEFAULT 0"))
+            trans.commit()
+
+
 def migrate_Database(_session):
     engine = _session.bind
     add_missing_tables(engine, _session)
     migrate_registration_table(engine, _session)
     migrate_user_session_table(engine, _session)
     migrate_remote_auth_token_table(engine, _session)
+    migrate_readbook_progress_table(engine, _session)
 
 
 def clean_database(_session):
