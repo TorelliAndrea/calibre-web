@@ -259,7 +259,9 @@ class Wikidata(Metadata):
         )
 
         record.identifiers = self._identifiers(qid, claims)
-        record.cover = self._cover(claims, record.identifiers, generic_cover)
+        record.cover = self._cover(
+            claims, record.identifiers, title, authors, generic_cover
+        )
         record.publisher = self._first_label(claims, "P123", labels)
         record.publishedDate = self._date(claims, "P577")
         record.languages = self._labels_list(claims, "P407", labels)
@@ -301,19 +303,53 @@ class Wikidata(Metadata):
 
     # ---- Copertina -----------------------------------------------------
 
-    def _cover(self, claims: Dict, identifiers: Dict, generic_cover: str) -> str:
-        # 1) Open Library via ISBN (verificata: niente immagini rotte).
+    def _cover(
+        self,
+        claims: Dict,
+        identifiers: Dict,
+        title: str,
+        authors: List[str],
+        generic_cover: str,
+    ) -> str:
+        # 1) Open Library via ISBN (preciso, quando c'e' — di solito solo se
+        #    l'item Wikidata e' un'edizione, non un'opera).
         isbn = identifiers.get("isbn")
         if isbn:
             url = self.COVER_URL.format(isbn=isbn)
             if self._url_exists(url):
                 return url
-        # 2) Ripiego: immagine P18 di Wikidata (Commons = libero). Per i libri
+        # 2) Ricerca Open Library per titolo/autore: copre le "opere" Wikidata
+        #    (Dune, 1984...) che non portano l'ISBN. Restituisce un cover_i.
+        cover = self._openlibrary_cover(title, authors)
+        if cover:
+            return cover
+        # 3) Ripiego: immagine P18 di Wikidata (Commons = libero). Per i libri
         #    e' di rado una copertina, ma quando c'e' e' sempre lecita.
         image = self._commons_image(claims)
         if image:
             return image
         return generic_cover
+
+    def _openlibrary_cover(self, title: str, authors: List[str]) -> Optional[str]:
+        if not title:
+            return None
+        params = {"title": title, "limit": 1, "fields": "cover_i"}
+        if authors:
+            params["author"] = authors[0]
+        try:
+            resp = requests.get(
+                "https://openlibrary.org/search.json",
+                params=params, headers=self.HEADERS, timeout=self.TIMEOUT,
+            )
+            resp.raise_for_status()
+            docs = resp.json().get("docs", [])
+        except Exception:  # noqa: BLE001
+            return None
+        if docs and docs[0].get("cover_i"):
+            return "https://covers.openlibrary.org/b/id/{}-L.jpg".format(
+                docs[0]["cover_i"]
+            )
+        return None
 
     def _url_exists(self, url: str) -> bool:
         try:
