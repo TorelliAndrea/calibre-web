@@ -63,6 +63,11 @@ class Wikidata(Metadata):
         "User-Agent": "Calibre-Web-MetadataProvider/1.0 "
         "(+https://github.com/janeczku/calibre-web)"
     }
+    # Copertine: Wikidata non le fornisce in modo affidabile (le copertine
+    # nelle voci Wikipedia sono non libere). Usiamo Open Library via ISBN
+    # (fonte pensata per il riuso); default=false -> 404 se non esiste, così
+    # verifichiamo prima e ricadiamo sulla copertina generica.
+    COVER_URL = "https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg?default=false"
 
     # "instance of" (P31) che identificano un'opera/libro.
     BOOK_TYPES = {
@@ -253,13 +258,13 @@ class Wikidata(Metadata):
             ),
         )
 
-        record.cover = generic_cover  # nessuna copertina da Wikidata (vedi note)
+        record.identifiers = self._identifiers(qid, claims)
+        record.cover = self._cover(claims, record.identifiers, generic_cover)
         record.publisher = self._first_label(claims, "P123", labels)
         record.publishedDate = self._date(claims, "P577")
         record.languages = self._labels_list(claims, "P407", labels)
         record.tags = self._labels_list(claims, "P136", labels)  # genere
         record.series, record.series_index = self._series(claims, labels)
-        record.identifiers = self._identifiers(qid, claims)
         record.description = self._description(entity, claims, lang, idx)
         return record
 
@@ -293,6 +298,43 @@ class Wikidata(Metadata):
                     return extract + attribution
         desc = entity.get("descriptions", {})
         return (desc.get(lang) or desc.get("en") or {}).get("value", "")
+
+    # ---- Copertina -----------------------------------------------------
+
+    def _cover(self, claims: Dict, identifiers: Dict, generic_cover: str) -> str:
+        # 1) Open Library via ISBN (verificata: niente immagini rotte).
+        isbn = identifiers.get("isbn")
+        if isbn:
+            url = self.COVER_URL.format(isbn=isbn)
+            if self._url_exists(url):
+                return url
+        # 2) Ripiego: immagine P18 di Wikidata (Commons = libero). Per i libri
+        #    e' di rado una copertina, ma quando c'e' e' sempre lecita.
+        image = self._commons_image(claims)
+        if image:
+            return image
+        return generic_cover
+
+    def _url_exists(self, url: str) -> bool:
+        try:
+            resp = requests.head(
+                url, headers=self.HEADERS, timeout=self.TIMEOUT,
+                allow_redirects=True,
+            )
+            return resp.status_code == 200
+        except Exception:  # noqa: BLE001
+            return False
+
+    @staticmethod
+    def _commons_image(claims: Dict) -> Optional[str]:
+        for statement in claims.get("P18", []):
+            value = Wikidata._value(statement)
+            if isinstance(value, str) and value:
+                return (
+                    "https://commons.wikimedia.org/wiki/Special:FilePath/"
+                    + quote(value.replace(" ", "_"))
+                )
+        return None
 
     # ---- Helper sui claim Wikidata -------------------------------------
 
