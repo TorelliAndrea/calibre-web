@@ -53,6 +53,13 @@ def main():
         kobo = kobo_auth = get_remote_address = None
 
     try:
+        from .kosync import kosync
+        kosync_available = True
+    except (ImportError, AttributeError):  # AttributeError se manca flask-WTF (csrf)
+        kosync_available = False
+        kosync = None
+
+    try:
         from .oauth_bb import oauth
         oauth_available = True
     except ImportError:
@@ -80,6 +87,8 @@ def main():
         limiter.limit("3/minute", key_func=get_remote_address)(kobo)
         app.register_blueprint(kobo)
         app.register_blueprint(kobo_auth)
+    if kosync_available:
+        app.register_blueprint(kosync)
     if oauth_available:
         app.register_blueprint(oauth)
     success = web_server.start()
